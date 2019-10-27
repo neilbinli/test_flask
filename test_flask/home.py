@@ -8,6 +8,9 @@ manager = Manager(app)
 bootstrap = Bootstrap(app)
 moment = Moment(app)
 
+dic_user_pw = {'libertybreeze@163.com': '123456',
+               }
+
 
 @app.route('/')
 def hello_world():
@@ -26,13 +29,25 @@ def show_post(post_id):
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    test = ["test0", "test1", "test2", ]
-    return render_template('login.html', test=test)
+    error = None
+    if request.method == 'GET':
+        if valid_login(request.form['username'], request.form['password']):
+            return 'login successfully for %d' % request.form['username']
+        else:
+            error = 'Invalid username/password'
+    return render_template('login.html', error=error)
 
 
 @app.route('/about')
 def about():
     return 'The about page'
+
+
+def valid_login(user, pw):
+    if pw == dic_user_pw[user]:
+        return True
+    else:
+        return False
 
 
 if __name__ == '__main__':
