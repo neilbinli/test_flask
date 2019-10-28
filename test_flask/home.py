@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, jsonify
 from flask_script import Manager
 from flask_bootstrap import Bootstrap
 from flask_moment import Moment
@@ -30,9 +30,20 @@ def show_post(post_id):
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     error = None
-    if request.method == 'GET':
-        if valid_login(request.form['username'], request.form['password']):
-            return 'login successfully for %d' % request.form['username']
+    if request.method == 'POST':
+        if valid_login(request.values['username'], request.values['password']):
+            return jsonify(message='login successfully for %s' % request.values['username'])
+        else:
+            error = 'Invalid username/password'
+    return render_template('login.html', error=error)
+
+
+@app.route('/register_retype_password', methods=['GET', 'POST'])
+def register():
+    error = None
+    if request.method == 'POST':
+        if valid_login(request.values['username'], request.values['password']):
+            return jsonify(message='register successfully for %s' % request.values['username'])
         else:
             error = 'Invalid username/password'
     return render_template('login.html', error=error)
