@@ -12,11 +12,10 @@ function submit_password() {
 
 function register_account() {
     console.log("enter register_account")
-    $.post('/register_retype_password',
+    $.post('/register_password',
         {'username': $('#inputEmail').val(), 'password': $('#inputPassword').val(), 'is_confirm': 'False'}
     ).done(function (data) {
         console.log(data)
-        // window.location.href='/login'
     }).fail(function (data) {
 
     });

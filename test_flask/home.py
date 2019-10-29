@@ -15,7 +15,7 @@ manager = Manager(app)
 bootstrap = Bootstrap(app)
 moment = Moment(app)
 
-HOST1 = '0.0.0.0'
+HOST1 = '192.168.1.5'
 USER1 = 'root'
 PASSWD1 = 'Welcome2019!'
 DB1 = 'scarborough'
@@ -48,7 +48,7 @@ def login():
         res = None
         try:
             cur = mysqlconnector.set_cursor(conn.cursor())
-            sql = 'select * from login_user_pw where user=%s' % user
+            sql = 'select * from login_user_pw where user="%s"' % user
             cur.execute(sql)
             res = cur.fetchall()
 
@@ -74,22 +74,35 @@ def login():
                 logger.error(error)
             else:
                 if user == sql_user and pw == sql_pw:
-                    return jsonify(message='login successfully for %s' % request.values['username'])
+                    return jsonify(message='Login successfully for %s' % request.values['username'])
                 else:
                     error = 'Invalid username/password for user %s and pw %s' % (user, pw)
                     logger.error(error)
     return render_template('login.html', error=error)
 
 
-@app.route('/register_retype_password', methods=['GET', 'POST'])
-def register():
-    error = None
+@app.route('/register_password', methods=['GET', 'POST'])
+def register_password():
     if request.method == 'POST':
-        if valid_login(request.values['username'], request.values['password']):
-            return jsonify(message='register successfully for %s' % request.values['username'])
+        if register_user(request.values['username'], request.values['password']):
+            return render_template('retype_password.html', user=request.values['username'])
         else:
             error = 'Invalid username/password'
-    return render_template('login.html', error=error)
+            return jsonify(message=error)
+    else:
+        return render_template('login.html', error='')
+
+
+@app.route('/retype_password', methods=['GET', 'POST'])
+def retype_password():
+    if request.method == 'POST':
+        if retype_user(request.values['username'], request.values['password']):
+            return render_template('login.html', error='Confirm password successfully!')
+        else:
+            error = 'Invalid username/password'
+            return jsonify(message=error)
+    else:
+        return render_template('login.html', error='')
 
 
 @app.route('/about')
@@ -97,11 +110,84 @@ def about():
     return 'The about page'
 
 
-def valid_login(user, pw):
-    if pw == dic_user_pw[user]:
-        return True
-    else:
-        return False
+def register_user(user, pw):
+    conn = mysqlconnector.get_conn(HOST1, USER1, PASSWD1, DB1)
+    try:
+        cur = mysqlconnector.set_cursor(conn.cursor())
+        sql = 'select * from login_user_pw where user="%s"' % user
+        cur.execute(sql)
+        res = cur.fetchall()
+
+        if len(res) > 1:
+            error = 'There are more than 1 password for user %s, check it please.' % user
+            logger.error(error)
+            return False
+        elif len(res) == 1:
+            if bool(res[0][2]):
+                error = 'The password for user %s is already confirmed, check it please.' % user
+                logger.error(error)
+                return False
+            else:
+                sql = 'delete from login_user_pw where user="%s"' % user
+                cur.execute(sql)
+                conn.commit()
+                sql = 'insert into login_user_pw (user, password, confirmed) values ("%s", "%s", "%s")' \
+                      % (user, pw, 'False')
+                cur.execute(sql)
+                conn.commit()
+                return True
+        else:
+            sql = 'insert into login_user_pw (user, password, confirmed) values ("%s", "%s", "%s")' \
+                  % (user, pw, 'False')
+            cur.execute(sql)
+            conn.commit()
+    except Exception as e:
+        msg = 'Exception %s in login when querying login_user_pw with user=%s' % (e, user)
+        logger.error(msg)
+
+    finally:
+        conn.close()
+    return True
+
+
+def retype_user(user, pw):
+    conn = mysqlconnector.get_conn(HOST1, USER1, PASSWD1, DB1)
+    try:
+        cur = mysqlconnector.set_cursor(conn.cursor())
+        sql = 'select * from login_user_pw where user="%s"' % user
+        cur.execute(sql)
+        res = cur.fetchall()
+
+        if len(res) > 1:
+            error = 'There are more than 1 password for user %s, check it please.' % user
+            logger.error(error)
+            return False
+        elif len(res) == 1:
+            if bool(res[0][2]):
+                error = 'The password for user %s is already confirmed, check it please.' % user
+                logger.error(error)
+                return False
+            else:
+                if pw == res[0][1]:
+                    sql = 'update login_user_pw  set confirmed="True" where user="%s"' % user
+                    cur.execute(sql)
+                    conn.commit()
+                    return True
+                else:
+                    error = 'The password for user %s is inconsistent with init one, check it please.' % user
+                    logger.error(error)
+                    return False
+        else:
+            error = 'There is not account for %s, check it please.' % user
+            logger.error(error)
+            return False
+    except Exception as e:
+        msg = 'Exception %s in login when querying login_user_pw with user=%s' % (e, user)
+        logger.error(msg)
+
+    finally:
+        conn.close()
+    return True
 
 
 if __name__ == '__main__':
