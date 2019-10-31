@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, redirect, send_file
 from flask_script import Manager
 from flask_bootstrap import Bootstrap
 from flask_moment import Moment
@@ -68,8 +68,8 @@ def login():
         else:
             sql_user = res[0][0]
             sql_pw = res[0][1]
-            sql_is_confirmed = bool(res[0][2])
-            if not sql_is_confirmed:
+            sql_is_confirmed = res[0][2]
+            if sql_is_confirmed != 'True':
                 error = 'The pw of user %s is not confirmed' % user
                 logger.error(error)
             else:
@@ -81,33 +81,44 @@ def login():
     return render_template('login.html', error=error)
 
 
-@app.route('/register_password', methods=['GET', 'POST'])
-def register_password():
+@app.route('/register_account', methods=['GET', 'POST'])
+def register_account():
     if request.method == 'POST':
         if register_user(request.values['username'], request.values['password']):
-            return render_template('retype_password.html', user=request.values['username'])
+            msg = "Successfully register with account %s" % request.values['username']
+            return jsonify(message=msg)
         else:
             error = 'Invalid username/password'
             return jsonify(message=error)
     else:
-        return render_template('login.html', error='')
+        error = 'Invalid method'
+        return jsonify(message=error)
 
 
-@app.route('/retype_password', methods=['GET', 'POST'])
-def retype_password():
-    if request.method == 'POST':
+@app.route('/retype_password/<username>', methods=['GET', 'POST'])
+def retype_password(username):
+    if request.method == 'GET':
+        return render_template('retype_password.html', user=username)
+    elif request.method == 'POST':
         if retype_user(request.values['username'], request.values['password']):
-            return render_template('login.html', error='Confirm password successfully!')
+            msg = "Successfully confirm password with account %s" % request.values['username']
+            return jsonify(message=msg)
         else:
-            error = 'Invalid username/password'
+            error = "Wrong password retyped or account %s was already confirmed" % request.values['username']
             return jsonify(message=error)
     else:
-        return render_template('login.html', error='')
+        error = 'Invalied method'
+        return jsonify(message=error)
 
 
-@app.route('/about')
+@app.route('/about/')
 def about():
     return 'The about page'
+
+
+@app.route('/mainpage', methods=['GET', 'POST'])
+def mainpage():
+    return 'The main page'
 
 
 def register_user(user, pw):
@@ -123,7 +134,7 @@ def register_user(user, pw):
             logger.error(error)
             return False
         elif len(res) == 1:
-            if bool(res[0][2]):
+            if res[0][2] == 'True':
                 error = 'The password for user %s is already confirmed, check it please.' % user
                 logger.error(error)
                 return False
@@ -163,7 +174,7 @@ def retype_user(user, pw):
             logger.error(error)
             return False
         elif len(res) == 1:
-            if bool(res[0][2]):
+            if res[0][2] == 'True':
                 error = 'The password for user %s is already confirmed, check it please.' % user
                 logger.error(error)
                 return False

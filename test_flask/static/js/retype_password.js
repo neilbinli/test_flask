@@ -1,12 +1,12 @@
 function confirm_password(user) {
     console.log("enter retype_password")
-    $.post('/retype-password',
+    $.post('/retype_password/'+user,
         {'username': user, 'password': $('#inputPassword').val()}
     ).done(function (data) {
         console.log(data)
-        // window.location.href='/login'
+        window.location.href='/login'
     }).fail(function (data) {
-
+        console.log(data)
     });
 }
 
