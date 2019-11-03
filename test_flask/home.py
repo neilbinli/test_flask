@@ -78,7 +78,9 @@ def login():
                 else:
                     error = 'Invalid username/password for user %s and pw %s' % (user, pw)
                     logger.error(error)
-    return render_template('login.html', error=error)
+    else:
+        return render_template("login.html")
+    return jsonify(message=error)
 
 
 @app.route('/register_account', methods=['GET', 'POST'])
@@ -95,12 +97,15 @@ def register_account():
         return jsonify(message=error)
 
 
-@app.route('/retype_password/<username>', methods=['GET', 'POST'])
-def retype_password(username):
+@app.route('/retype_password', methods=['GET', 'POST'])
+def retype_password():
     if request.method == 'GET':
-        return render_template('retype_password.html', user=username)
+        error = 'Invalid method'
+        return jsonify(message=error)
     elif request.method == 'POST':
-        if retype_user(request.values['username'], request.values['password']):
+        if 'password' not in request.values.keys():
+            return render_template('retype_password.html', user=request.values['username'])
+        elif retype_user(request.values['username'], request.values['password']):
             msg = "Successfully confirm password with account %s" % request.values['username']
             return jsonify(message=msg)
         else:
@@ -118,7 +123,8 @@ def about():
 
 @app.route('/mainpage', methods=['GET', 'POST'])
 def mainpage():
-    return 'The main page'
+    return render_template("mainpage.html")
+    # return 'The main page'
 
 
 def register_user(user, pw):

@@ -37,12 +37,11 @@ function register_account() {
             var strs = new Array();
             strs = data.message.split(/[\s\n]/);
             user = strs[4]
-            window.location.href='/retype_password/' + user
-//            var form = $("<form>");   //定义一个form表单 
-//            form.attr('method','post');
-//            form.attr('action','/register_account');  
-//            $('body').append(form);  //将表单放置在web中  
-//            form.submit();  //表单提交 
+//            window.location.href='/retype_password/' + user
+            document.write("<form id='retype' name='retype_password' method='post' action='retype_password'>")
+            document.write("<input type='hidden' name='username' value='" + user + "'>")
+            document.write("</form>")
+            document.retype_password.submit();
         }
         else
         {
